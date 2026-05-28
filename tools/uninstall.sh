@@ -1,41 +1,42 @@
-if hash chsh >/dev/null 2>&1 && [ -f ~/.shell.pre-oh-my-zsh ]; then
-  old_shell=$(cat ~/.shell.pre-oh-my-zsh)
-  echo "Switching your shell back to '$old_shell':"
-  if chsh -s "$old_shell"; then
-    rm -f ~/.shell.pre-oh-my-zsh
-  else
-    echo "Could not change default shell. Change it manually by running chsh"
-    echo "or editing the /etc/passwd file."
-    exit
-  fi
-fi
+#!/bin/sh
+# Uninstall this zzsh fork.
+#
+# Removes ~/.oh-my-zsh (symlink or copy) and restores ~/.zshrc.pre-zzsh
+# if it exists. Safe to re-run.
 
-read -r -p "Are you sure you want to remove Oh My Zsh? [y/N] " confirmation
-if [ "$confirmation" != y ] && [ "$confirmation" != Y ]; then
-  echo "Uninstall cancelled"
-  exit
-fi
+set -e
 
-echo "Removing ~/.oh-my-zsh"
-if [ -d ~/.oh-my-zsh ]; then
-  rm -rf ~/.oh-my-zsh
-fi
+INSTALL_DIR="${ZSH:-$HOME/.oh-my-zsh}"
+ZSHRC="${ZDOTDIR:-$HOME}/.zshrc"
+ZSHRC_BACKUP="$ZSHRC.pre-zzsh"
 
-if [ -e ~/.zshrc ]; then
-  ZSHRC_SAVE=~/.zshrc.omz-uninstalled-$(date +%Y-%m-%d_%H-%M-%S)
-  echo "Found ~/.zshrc -- Renaming to ${ZSHRC_SAVE}"
-  mv ~/.zshrc "${ZSHRC_SAVE}"
-fi
+echo "Uninstalling zzsh"
 
-echo "Looking for original zsh config..."
-ZSHRC_ORIG=~/.zshrc.pre-oh-my-zsh
-if [ -e "$ZSHRC_ORIG" ]; then
-  echo "Found $ZSHRC_ORIG -- Restoring to ~/.zshrc"
-  mv "$ZSHRC_ORIG" ~/.zshrc
-  echo "Your original zsh config was restored."
+# 1. Remove install dir
+if [ -L "$INSTALL_DIR" ]; then
+  rm "$INSTALL_DIR"
+  echo "  Removed symlink $INSTALL_DIR"
+elif [ -d "$INSTALL_DIR" ]; then
+  printf "  About to delete directory %s — continue? [y/N] " "$INSTALL_DIR"
+  read -r reply
+  case "$reply" in
+    y|Y|yes|YES)
+      rm -rf "$INSTALL_DIR"
+      echo "  Removed directory $INSTALL_DIR" ;;
+    *) echo "  Aborted directory removal." ;;
+  esac
 else
-  echo "No original zsh config found"
+  echo "  $INSTALL_DIR not found; nothing to remove."
 fi
 
-echo "Thanks for trying out Oh My Zsh. It's been uninstalled."
-echo "Don't forget to restart your terminal!"
+# 2. Restore .zshrc backup
+if [ -f "$ZSHRC_BACKUP" ]; then
+  mv "$ZSHRC_BACKUP" "$ZSHRC"
+  echo "  Restored $ZSHRC from $ZSHRC_BACKUP"
+elif [ -f "$ZSHRC" ]; then
+  echo "  No backup at $ZSHRC_BACKUP — current $ZSHRC left in place."
+  echo "  Edit or delete it manually if you want."
+fi
+
+echo
+echo "Done. Open a new terminal."
