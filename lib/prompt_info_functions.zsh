@@ -16,7 +16,6 @@ function chruby_prompt_info \
   pyenv_prompt_info \
   svn_prompt_info \
   vi_mode_prompt_info \
-  virtualenv_prompt_info \
   jenv_prompt_info \
   azure_prompt_info \
   tf_prompt_info \
@@ -24,6 +23,18 @@ function chruby_prompt_info \
 {
   return 1
 }
+
+# Real implementation (migrated from the deleted virtualenv plugin).
+# Shows the active Python virtualenv name in the prompt, wrapped in the
+# theme's ZSH_THEME_VIRTUALENV_PREFIX / _SUFFIX.
+function virtualenv_prompt_info() {
+  [[ -n "$VIRTUAL_ENV" ]] || return 1
+  echo "${ZSH_THEME_VIRTUALENV_PREFIX=[}${VIRTUAL_ENV_PROMPT:-${VIRTUAL_ENV:t:gs/%/%%}}${ZSH_THEME_VIRTUALENV_SUFFIX=]}"
+}
+
+# Stop venv's activate script from prepending "(venv) " to $PS1 — the theme
+# already shows it via virtualenv_prompt_info.
+export VIRTUAL_ENV_DISABLE_PROMPT=1
 
 # oh-my-zsh supports an rvm prompt by default
 # get the name of the rvm ruby version
